@@ -1,3 +1,9 @@
 [submodule "MPU9250"]
 	path = MPU9250
 	url = https://github.com/kriswiner/MPU9250.git
+[submodule "arduino_cmake"]
+	path = arduino_cmake
+	url = https://github.com/mitikkak/arduino_cmake.git
+[submodule "googletest"]
+	path = googletest
+	url = https://github.com/google/googletest.git
