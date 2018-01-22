@@ -2,35 +2,9 @@
 #include "Arduino.h"
 #include "Constants.h"
 #include "Wire.h"
-#ifdef TEENSY
-#include "i2c_t3.h"
-#else
-#define I2C_NOSTOP 0
-#endif
 #include "SPI.h"
 #include "Components.h"
-
-#define SerialDebug true  // set to true to get Serial output for debugging
-
-// Set initial input parameters
-enum Ascale {
-  AFS_2G = 0,
-  AFS_4G,
-  AFS_8G,
-  AFS_16G
-};
-
-enum Gscale {
-  GFS_250DPS = 0,
-  GFS_500DPS,
-  GFS_1000DPS,
-  GFS_2000DPS
-};
-
-enum Mscale {
-  MFS_14BITS = 0, // 0.6 mG per LSB
-  MFS_16BITS      // 0.15 mG per LSB
-};
+#include "Loop.h"
 
 #define ADC_256  0x00 // define pressure and temperature conversion rates
 #define ADC_512  0x02
@@ -43,18 +17,10 @@ enum Mscale {
 
 // Specify sensor full scale
 uint8_t OSR = ADC_8192;     // set pressure amd temperature oversample rate
-uint8_t Gscale = GFS_250DPS;
-uint8_t Ascale = AFS_2G;
-uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
-uint8_t Mmode = 0x06;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
-float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
 
 // Pin definitions
-volatile bool newData = false;
 bool newMagData = false;
 
-uint16_t Pcal[8];         // calibration constants from MS5637 PROM registers
-unsigned char nCRC;       // calculated check sum to ensure PROM integrity
 uint32_t D1 = 0, D2 = 0;  // raw MS5637 pressure and temperature data
 double dT, OFFSET, SENS, T2, OFFSET2, SENS2;  // First order and second order corrections for raw S5637 temperature and pressure data
 
@@ -62,12 +28,9 @@ int16_t MPU9250Data[7]; // used to read all 14 bytes at once from the MPU9250 ac
 int16_t accelCount[3];  // Stores the 16-bit signed accelerometer sensor output
 int16_t gyroCount[3];   // Stores the 16-bit signed gyro sensor output
 int16_t magCount[3];    // Stores the 16-bit signed magnetometer sensor output
-float magCalibration[3] = {0, 0, 0};  // Factory mag calibration and mag bias
-float gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0}, magBias[3] = {0, 0, 0}, magScale[3]  = {0, 0, 0};      // Bias corrections for gyro and accelerometer
 int16_t tempCount;            // temperature raw count output
 float   temperature;          // Stores the MPU9250 gyro internal chip temperature in degrees Celsius
 double Temperature, Pressure; // stores MS5637 pressures sensor pressure and temperature
-float SelfTest[6];            // holds results of gyro and accelerometer self test
 
 // global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
 float GyroMeasError = PI * (4.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)

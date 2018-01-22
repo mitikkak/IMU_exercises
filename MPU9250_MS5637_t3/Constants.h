@@ -174,3 +174,25 @@
 static constexpr int intPin{8};
 static constexpr int myLed{13};
 
+// Set initial input parameters
+enum Ascale_t {
+  AFS_2G = 0,
+  AFS_4G,
+  AFS_8G,
+  AFS_16G
+};
+
+enum Gscale_t {
+  GFS_250DPS = 0,
+  GFS_500DPS,
+  GFS_1000DPS,
+  GFS_2000DPS
+};
+
+enum Mscale_t {
+  MFS_14BITS = 0, // 0.6 mG per LSB
+  MFS_16BITS      // 0.15 mG per LSB
+};
+
+
+#define SerialDebug true  // set to true to get Serial output for debugging
