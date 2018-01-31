@@ -1,10 +1,10 @@
 
-#include "Arduino.h"
 #include "Constants.h"
-#include "Wire.h"
-#include "SPI.h"
 #include "Components.h"
 #include "Loop.h"
+#include "Arduino.h"
+#include "SPI.h"
+#include "Wire.h"
 
 #define ADC_256  0x00 // define pressure and temperature conversion rates
 #define ADC_512  0x02
