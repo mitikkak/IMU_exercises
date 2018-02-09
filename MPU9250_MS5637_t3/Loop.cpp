@@ -57,7 +57,7 @@ uint32_t Now = 0;                         // used to calculate integration inter
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values
 float lin_ax, lin_ay, lin_az;             // linear acceleration (acceleration with gravity component subtracted)
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
+float quaternion[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 
 uint8_t readByte(uint8_t address, uint8_t subAddress)
@@ -116,9 +116,9 @@ void readMagData(int16_t * destination)
 // device orientation -- which can be converted to yaw, pitch, and roll. Useful for stabilizing quadcopters, etc.
 // The performance of the orientation filter is at least as good as conventional Kalman-based filtering algorithms
 // but is much less computationally intensive---it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
-        void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+QuaternionResult MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
         {
-            float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+            float q1 = quaternion[0], q2 = quaternion[1], q3 = quaternion[2], q4 = quaternion[3];   // short name local variable for readability
             float norm;
             float hx, hy, _2bx, _2bz;
             float s1, s2, s3, s4;
@@ -150,7 +150,7 @@ void readMagData(int16_t * destination)
 
             // Normalise accelerometer measurement
             norm = sqrtf(ax * ax + ay * ay + az * az);
-            if (norm == 0.0f) return; // handle NaN
+            if (norm == 0.0f) return QuaternionResult::accelerationFailure; // handle NaN
             norm = 1.0f/norm;
             ax *= norm;
             ay *= norm;
@@ -158,7 +158,7 @@ void readMagData(int16_t * destination)
 
             // Normalise magnetometer measurement
             norm = sqrtf(mx * mx + my * my + mz * mz);
-            if (norm == 0.0f) return; // handle NaN
+            if (norm == 0.0f) return QuaternionResult::magneticMomentFailure; // handle NaN
             norm = 1.0f/norm;
             mx *= norm;
             my *= norm;
@@ -201,11 +201,11 @@ void readMagData(int16_t * destination)
             q4 += qDot4 * deltat;
             norm = sqrtf(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
             norm = 1.0f/norm;
-            q[0] = q1 * norm;
-            q[1] = q2 * norm;
-            q[2] = q3 * norm;
-            q[3] = q4 * norm;
-
+            quaternion[0] = q1 * norm;
+            quaternion[1] = q2 * norm;
+            quaternion[2] = q3 * norm;
+            quaternion[3] = q4 * norm;
+            return QuaternionResult::success;
         }
 
 
@@ -214,7 +214,7 @@ void readMagData(int16_t * destination)
  // measured ones.
             void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
         {
-            float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+            float q1 = quaternion[0], q2 = quaternion[1], q3 = quaternion[2], q4 = quaternion[3];   // short name local variable for readability
             float norm;
             float hx, hy, bx, bz;
             float vx, vy, vz, wx, wy, wz;
@@ -297,10 +297,10 @@ void readMagData(int16_t * destination)
             // Normalise quaternion
             norm = sqrtf(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
             norm = 1.0f / norm;
-            q[0] = q1 * norm;
-            q[1] = q2 * norm;
-            q[2] = q3 * norm;
-            q[3] = q4 * norm;
+            quaternion[0] = q1 * norm;
+            quaternion[1] = q2 * norm;
+            quaternion[2] = q3 * norm;
+            quaternion[3] = q4 * norm;
 
         }
 int16_t readTempData()
@@ -404,10 +404,10 @@ void loop()
     Serial.print(" my = "); Serial.print( (int)my );
     Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
 
-    Serial.print("q0 = "); Serial.print(q[0]);
-    Serial.print(" qx = "); Serial.print(q[1]);
-    Serial.print(" qy = "); Serial.print(q[2]);
-    Serial.print(" qz = "); Serial.println(q[3]);
+    Serial.print("q0 = "); Serial.print(quaternion[0]);
+    Serial.print(" qx = "); Serial.print(quaternion[1]);
+    Serial.print(" qy = "); Serial.print(quaternion[2]);
+    Serial.print(" qz = "); Serial.println(quaternion[3]);
     }
     tempCount = readTempData();  // Read the gyro adc values
     temperature = ((float) tempCount) / 333.87 + 21.0; // Gyro chip temperature in degrees Centigrade
@@ -482,19 +482,19 @@ void loop()
   // applied in the correct order which for this configuration is yaw, pitch, and then roll.
   // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
     //Software AHRS:
- //   yaw   = atan2f(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
- //   pitch = -asinf(2.0f * (q[1] * q[3] - q[0] * q[2]));
- //   roll  = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+ //   yaw   = atan2f(2.0f * (quaternion[1] * quaternion[2] + quaternion[0] * quaternion[3]), quaternion[0] * quaternion[0] + quaternion[1] * quaternion[1] - quaternion[2] * quaternion[2] - quaternion[3] * quaternion[3]);
+ //   pitch = -asinf(2.0f * (quaternion[1] * quaternion[3] - quaternion[0] * quaternion[2]));
+ //   roll  = atan2f(2.0f * (quaternion[0] * quaternion[1] + quaternion[2] * quaternion[3]), quaternion[0] * quaternion[0] - quaternion[1] * quaternion[1] - quaternion[2] * quaternion[2] + quaternion[3] * quaternion[3]);
  //   pitch *= 180.0f / PI;
  //   yaw   *= 180.0f / PI;
  //   yaw   += 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
  //   if(yaw < 0) yaw   += 360.0f; // Ensure yaw stays between 0 and 360
  //   roll  *= 180.0f / PI;
-    a12 =   2.0f * (q[1] * q[2] + q[0] * q[3]);
-    a22 =   q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
-    a31 =   2.0f * (q[0] * q[1] + q[2] * q[3]);
-    a32 =   2.0f * (q[1] * q[3] - q[0] * q[2]);
-    a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
+    a12 =   2.0f * (quaternion[1] * quaternion[2] + quaternion[0] * quaternion[3]);
+    a22 =   quaternion[0] * quaternion[0] + quaternion[1] * quaternion[1] - quaternion[2] * quaternion[2] - quaternion[3] * quaternion[3];
+    a31 =   2.0f * (quaternion[0] * quaternion[1] + quaternion[2] * quaternion[3]);
+    a32 =   2.0f * (quaternion[1] * quaternion[3] - quaternion[0] * quaternion[2]);
+    a33 =   quaternion[0] * quaternion[0] - quaternion[1] * quaternion[1] - quaternion[2] * quaternion[2] + quaternion[3] * quaternion[3];
     pitch = -asinf(a32);
     roll  = atan2f(a31, a33);
     yaw   = atan2f(a12, a22);
