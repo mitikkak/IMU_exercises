@@ -1,4 +1,15 @@
 
+#pragma once
+
+#define ADC_256  0x00 // define pressure and temperature conversion rates
+#define ADC_512  0x02
+#define ADC_1024 0x04
+#define ADC_2048 0x06
+#define ADC_4096 0x08
+#define ADC_8192 0x0A
+#define ADC_D1   0x40
+#define ADC_D2   0x50
+
 // Using NOKIA 5110 monochrome 84 x 48 pixel display
 // pin 7 - Serial clock out (SCLK)
 // pin 6 - Serial data out (DIN)

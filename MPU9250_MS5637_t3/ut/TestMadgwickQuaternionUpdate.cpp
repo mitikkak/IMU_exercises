@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
 #include "Loop.h"
+#include "Quaternion.h"
 
 class TestMadgwickQuaternionUpdate : public ::testing::Test {
 public:
