@@ -10,4 +10,5 @@ set(sources ${MY_SRC}/Loop.cpp
 )
 
 add_subdirectory(atmega328)
+add_subdirectory(teensy)
 add_subdirectory(ut)

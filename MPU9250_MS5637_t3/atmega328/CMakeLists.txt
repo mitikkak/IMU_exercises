@@ -1,5 +1,5 @@
 
-project(MPU9250_MS5637_t3)
+project(MPU9250_MS5637_t3_atmega328)
 
 include(${PROJECT_ROOT}/arduino_cmake/arduino_paths.cmake)
 set(AVR_COMPILER_DIR ${ARDUINO_PATH}/hardware/tools/avr/bin)
