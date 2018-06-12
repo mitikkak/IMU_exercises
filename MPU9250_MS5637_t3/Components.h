@@ -1,11 +1,12 @@
 
 #pragma once
-#include "LiquidCrystal.h"
+#include "LiquidCrystal_I2C.h"
 
 #ifdef ADAFRUIT_LCD
 Adafruit_PCD8544 display = Adafruit_PCD8544(7, 6, 5, 3, 4);
 #else
-extern LiquidCrystal display;
+//extern LiquidCrystal display;
+extern LiquidCrystal_I2C display;
 #endif
 
 extern float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors

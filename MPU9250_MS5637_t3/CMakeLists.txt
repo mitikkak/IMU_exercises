@@ -1,6 +1,6 @@
 
 set(MY_SRC ${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${ARDUINO_CORE_SRC} ${PROJECT_ROOT} ${MY_SRC})
+INCLUDE_DIRECTORIES(${PROJECT_ROOT} ${MY_SRC} ${LCD_SRC})
 
 set(sources ${MY_SRC}/Loop.cpp
             ${MY_SRC}/Setup.cpp
@@ -9,6 +9,7 @@ set(sources ${MY_SRC}/Loop.cpp
             ${MY_SRC}/WireReader.cpp
 )
 
-add_subdirectory(atmega328)
-add_subdirectory(teensy)
-add_subdirectory(ut)
+#add_subdirectory(atmega328)
+add_subdirectory(esp8266_12e)
+#add_subdirectory(teensy)
+#add_subdirectory(ut)
