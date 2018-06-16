@@ -460,9 +460,73 @@ void myinthandler()
 {
   newData = true;
 }
+
+void initMPU9250()
+{
+ // wake up device
+  writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00); // Clear sleep mode bit (6), enable all sensors
+  delay(100); // Wait for all registers to reset
+
+ // get stable time source
+  writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
+  delay(200);
+
+ // Configure Gyro and Thermometer
+ // Disable FSYNC and set thermometer and gyro bandwidth to 41 and 42 Hz, respectively;
+ // minimum delay time for this setting is 5.9 ms, which means sensor fusion update rates cannot
+ // be higher than 1 / 0.0059 = 170 Hz
+ // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
+ // With the MPU9250, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
+  writeByte(MPU9250_ADDRESS, CONFIG, 0x03);
+
+ // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
+  writeByte(MPU9250_ADDRESS, SMPLRT_DIV, 0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
+                                    // determined inset in CONFIG above
+
+ // Set gyroscope full scale range
+ // Range selects FS_SEL and GFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
+  uint8_t c = readByte(MPU9250_ADDRESS, GYRO_CONFIG); // get current GYRO_CONFIG register value
+ // c = c & ~0xE0; // Clear self-test bits [7:5]
+  c = c & ~0x03; // Clear Fchoice bits [1:0]
+  c = c & ~0x18; // Clear GFS bits [4:3]
+  c = c | Gscale << 3; // Set full scale range for the gyro
+ // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
+  writeByte(MPU9250_ADDRESS, GYRO_CONFIG, c ); // Write new GYRO_CONFIG value to register
+
+ // Set accelerometer full-scale range configuration
+  c = readByte(MPU9250_ADDRESS, ACCEL_CONFIG); // get current ACCEL_CONFIG register value
+ // c = c & ~0xE0; // Clear self-test bits [7:5]
+  c = c & ~0x18;  // Clear AFS bits [4:3]
+  c = c | Ascale << 3; // Set full scale range for the accelerometer
+  writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, c); // Write new ACCEL_CONFIG register value
+
+ // Set accelerometer sample rate configuration
+ // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
+ // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
+  c = readByte(MPU9250_ADDRESS, ACCEL_CONFIG2); // get current ACCEL_CONFIG2 register value
+  c = c & ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
+  c = c | 0x03;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+  writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, c); // Write new ACCEL_CONFIG2 register value
+
+ // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates,
+ // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
+
+  // Configure Interrupts and Bypass Enable
+  // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
+  // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips
+  // can join the I2C bus and all can be controlled by the Arduino as master
+//   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);
+   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x12);  // INT is 50 microsecond pulse and any read to clear
+   writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);  // Enable data ready (bit 0) interrupt
+   delay(100);
+}
+
+
 unsigned char nCRC;       // calculated check sum to ensure PROM integrity
 void setup()
 {
+    Serial.begin(115200);
+    Serial.println("MPU9250 starts");
 #ifdef TEENSY
     //  TWBR = 12;  // 400 kbit/sec I2C speed for Pro Mini
       // Setup for Master mode, pins 18/19, external pullups, 400kHz for Teensy 3.1
@@ -470,13 +534,13 @@ void setup()
 #else
       Wire.begin();
 #endif
-      delay(4000);
-      Serial.begin(38400);
+
+
 
       // Set up the interrupt pin, its set as active high, push-pull
-      pinMode(intPin, INPUT);
-      pinMode(myLed, OUTPUT);
-      digitalWrite(myLed, HIGH);
+      //pinMode(intPin, INPUT);
+      //pinMode(myLed, OUTPUT);
+      //digitalWrite(myLed, HIGH);
 
 #ifdef ADAFRUIT_LCD
       display.begin(); // Initialize the display
@@ -507,12 +571,14 @@ void setup()
       Serial.println("MPU9250 9-axis motion sensor...");
       byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);  // Read WHO_AM_I register for MPU-9250
       Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX); Serial.print(" I should be "); Serial.println(0x71, HEX);
+#if 0
       display.setCursor(20,0); display.print("MPU9250");
       display.setCursor(0,10); display.print("I AM");
       display.setCursor(0,20); display.print(c, HEX);
       display.setCursor(0,30); display.print("I Should Be");
       display.setCursor(0,40); display.print(0x71, HEX);
       display.display();
+#endif
       delay(1000);
 
       if (c == 0x71) // WHO_AM_I should always be 0x68
@@ -533,12 +599,11 @@ void setup()
        getGres();
        getMres();
 
-#ifdef ADAFRUIT_LCD
        Serial.println(" Calibrate gyro and accel");
        accelgyrocalMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
        Serial.println("accel biases (mg)"); Serial.println(1000.*accelBias[0]); Serial.println(1000.*accelBias[1]); Serial.println(1000.*accelBias[2]);
        Serial.println("gyro biases (dps)"); Serial.println(gyroBias[0]); Serial.println(gyroBias[1]); Serial.println(gyroBias[2]);
-
+#ifdef ADAFRUIT_LCD
       display.clearDisplay();
 
       display.setCursor(0, 0); display.print("MPU9250 bias");
@@ -556,13 +621,14 @@ void setup()
 
       display.display();
       delay(1000);
-
+#endif
       initMPU9250();
       Serial.println("MPU9250 initialized for active data mode...."); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
 
       // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
       byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
       Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX); Serial.print(" I should be "); Serial.println(0x48, HEX);
+#if 0
       display.clearDisplay();
       display.setCursor(20,0); display.print("AK8963");
       display.setCursor(0,10); display.print("I AM");
@@ -570,9 +636,6 @@ void setup()
       display.setCursor(0,30); display.print("I Should Be");
       display.setCursor(0,40); display.print(0x48, HEX);
       display.display();
-      delay(1000);
-#else
-      display.print("TODO..");
       delay(1000);
 #endif
 
@@ -585,7 +648,7 @@ void setup()
       delay(2000); // add delay to see results before serial spew of data
 
       if(SerialDebug) {
-    //  Serial.println("Calibration values: ");
+      Serial.println("Calibration values: ");
       Serial.print("X-Axis sensitivity adjustment value "); Serial.println(magCalibration[0], 2);
       Serial.print("Y-Axis sensitivity adjustment value "); Serial.println(magCalibration[1], 2);
       Serial.print("Z-Axis sensitivity adjustment value "); Serial.println(magCalibration[2], 2);
@@ -599,11 +662,7 @@ void setup()
       display.setCursor(0,30); display.print("ASAZ "); display.setCursor(50,30); display.print(magCalibration[2], 2);
       display.display();
       delay(1000);
-#else
-      display.print("TODO 2...");
-      delay(1000);
 #endif
-
       // Reset the MS5637 pressure sensor
       MS5637Reset();
       delay(100);
@@ -630,13 +689,8 @@ void setup()
       display.setCursor(0,20); display.print("Should be "); display.setCursor(50,30); display.print(refCRC);
       display.display();
       delay(1000);
-#else
-      display.print("TODO 3...");
-      delay(1000);
 #endif
-
-      attachInterrupt(intPin, myinthandler, RISING);  // define interrupt for INT pin output of MPU9250
-
+//      attachInterrupt(intPin, myinthandler, RISING);  // define interrupt for INT pin output of MPU9250
       }
       else
       {

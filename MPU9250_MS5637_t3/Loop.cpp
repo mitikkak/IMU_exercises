@@ -269,6 +269,7 @@ void loop()
     display.clearDisplay();
 #endif
 
+#if 0
     display.setCursor(0, 0); display.print(" x   y   z ");
 
     display.setCursor(0,  8); display.print((int)(1000*ax));
@@ -306,7 +307,7 @@ void loop()
     display.setCursor(68, 0); display.print(9.*Temperature/5. + 32., 0);
     display.setCursor(42, 40); display.print((float) sumCount / (1000.*sum), 2); display.print("kHz");
     display.display();
-
+#endif
     digitalWrite(myLed, !digitalRead(myLed));
     count = millis();
     sumCount = 0;
