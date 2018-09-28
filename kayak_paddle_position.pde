@@ -100,6 +100,7 @@ void drawArduino()
   translate(150, 0, 0); // set position to edge of Arduino box
   box(50, 10, 30); // draw Arduino board base shape
   translate(-300, 0, 0); // set position to edge of Arduino box
+  rotateX(radians(60));
   box(50, 10, 30); // draw Arduino board base shape
   //stroke(0); // set outline colour to black
   //fill(80); // set fill colour to dark grey
