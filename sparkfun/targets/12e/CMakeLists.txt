@@ -1,0 +1,10 @@
+project(sparkfun_12e)
+
+include(${ARDUINO_CMAKE_DIR}/esp8266/12e.cmake)
+set(EXT_SRC_DIR ${SPARKFUN_LIB_SRC}
+                ${SPI_ESP8266_DIR}
+                ${WIRE_ESP8266_DIR}
+)
+set(ext_sources ${sparkfun_lib_sources})
+set(all_sources ${sources} ${ext_sources})
+build_targets_esp8266_12e("${all_sources}" "${EXT_SRC_DIR}")
