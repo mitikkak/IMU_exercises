@@ -1,9 +1,10 @@
-import processing.serial.*;
-Serial myPort;
+
+import processing.net.*;
+import websockets.*;
 
 class AngularPosition
 {
-  AngularPosition(float y, float p, float r)
+  AngularPosition(float p, float r, float y)
   {
     yaw = y;
     pitch = p;
@@ -14,8 +15,11 @@ class AngularPosition
   public float roll;
 };
 
+/*
 AngularPosition inputPos[];
 int positionIndex;
+*/
+WebsocketClient c;
 
 float yaw = 0.0;
 float pitch = 0.0;
@@ -23,12 +27,29 @@ float roll = 0.0;
 
 void setup()
 {
-  inputPos = new AngularPosition[1000];
-  for (int i = 0; i < inputPos.length; i++)
-  {
-    inputPos[i] = new AngularPosition(i*0.0, i*0.1, i*0.05);
-  }
+  /*
+  inputPos = new AngularPosition[15];
+  inputPos[0] = new AngularPosition(0.0, 0.0, 0.0);
+  inputPos[1] = new AngularPosition(90.0, 0.0, 0.0);
+  inputPos[2] = new AngularPosition(180.0, 0.0, 0.0);
+  inputPos[3] = new AngularPosition(270.0, 0.0, 0.0);
+  inputPos[4] = new AngularPosition(350.0, 0.0, 0.0);
+  
+  inputPos[5] = new AngularPosition(0.0, 0.0, 0.0);
+  inputPos[6] = new AngularPosition(0.0, 90.0, 0.0);
+  inputPos[7] = new AngularPosition(0.0, 180.0, 0.0);
+  inputPos[8] = new AngularPosition(0.0, 270.0, 0.0);
+  inputPos[9] = new AngularPosition(0.0, 350.0, 0.0);
+  
+  inputPos[10] = new AngularPosition(0.0, 0.0, 0.0);
+  inputPos[11] = new AngularPosition(0.0, 0.0, 90.0);
+  inputPos[12] = new AngularPosition(0.0, 0.0, 180.0);
+  inputPos[13] = new AngularPosition(0.0, 0.0, 270.0);
+  inputPos[14] = new AngularPosition(0.0, 0.0, 350.0);
+
   positionIndex = 0;
+  */
+  c = new WebsocketClient(this, "ws://192.168.8.101:80");
   size(600, 500, P3D);
 
   // if you have only ONE serial port active
@@ -43,12 +64,19 @@ void setup()
   textMode(SHAPE); // set text mode to shape
 }
 
+String nextPositionMessage = new String("Orientation: 0.0 0.0 0.0");
+void webSocketEvent(String msg){
+ println(msg);
+ nextPositionMessage = msg;
+}
+
 void draw()
 {
-  AngularPosition pos = inputPos[positionIndex];
-  serialEvent(pos);  // read and parse incoming serial message
-  positionIndex++;
-  if (positionIndex == inputPos.length) { positionIndex = 0; }
+  c.sendMessage("position?\n");
+  
+  serialEvent(nextPositionMessage);  // read and parse incoming serial message
+  //positionIndex++;
+  //if (positionIndex == inputPos.length) { positionIndex = 0; }
   background(255); // set background to white
   lights();
 
@@ -72,22 +100,21 @@ void draw()
   popMatrix(); // end of object
 
   // Print values to console
-  print(roll);
-  print("\t");
-  print(pitch);
-  print("\t");
-  print(yaw);
-  println();
+  //print(positionIndex); print(": "); print("\t");
+  print("pitch"); print(pitch); print("\t");
+  print("roll"); print(roll); print("\t");
+  print("yaw"); print(yaw); println();
+  //delay(1000);
 }
 
-void serialEvent(AngularPosition pos)
+void serialEvent(String message)
 {
-  String message = "Orientation: " + pos.yaw + " " + pos.pitch + " " + pos.roll;
+  
   String[] list = split(trim(message), " ");
       if (list.length >= 4 && list[0].equals("Orientation:")) {
-        yaw = float(list[1]); // convert to float yaw
-        pitch = float(list[2]); // convert to float pitch
-        roll = float(list[3]); // convert to float roll
+        pitch = float(list[1]); // convert to float pitch
+        roll = float(list[2]); // convert to float roll
+        yaw = float(list[3]); // convert to float yaw
       }
 }
 
