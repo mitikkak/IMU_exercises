@@ -27,6 +27,7 @@
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 
+#define LCD
 #ifdef LCD
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
@@ -37,7 +38,12 @@
 // pin 7 - Data/Command select (D/C)
 // pin 5 - LCD chip select (CS)
 // pin 6 - LCD reset (RST)
+
+#ifdef ESP8266
+Adafruit_PCD8544 display = Adafruit_PCD8544(D4, 15, 14, 13, 12);
+#else
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
+#endif
 #endif // LCD
 
 #define AHRS true         // Set to false for basic data read
@@ -53,7 +59,7 @@ void setup()
 {
   Wire.begin();
   // TWBR = 12;  // 400 kbit/sec I2C speed
-  Serial.begin(38400);
+  Serial.begin(115200);
 
   // Set up the interrupt pin, its set as active high, push-pull
   pinMode(intPin, INPUT);
@@ -125,10 +131,10 @@ void setup()
     display.setCursor(0, 0); display.print("MPU9250 bias");
     display.setCursor(0, 8); display.print(" x   y   z  ");
 
-    display.setCursor(0,  16); display.print((int)(1000*accelBias[0]));
-    display.setCursor(24, 16); display.print((int)(1000*accelBias[1]));
-    display.setCursor(48, 16); display.print((int)(1000*accelBias[2]));
-    display.setCursor(72, 16); display.print("mg");
+//    display.setCursor(0,  16); display.print((int)(1000*accelBias[0]));
+//    display.setCursor(24, 16); display.print((int)(1000*accelBias[1]));
+//    display.setCursor(48, 16); display.print((int)(1000*accelBias[2]));
+//    display.setCursor(72, 16); display.print("mg");
 
     display.setCursor(0,  24); display.print(myIMU.gyroBias[0], 1);
     display.setCursor(24, 24); display.print(myIMU.gyroBias[1], 1);

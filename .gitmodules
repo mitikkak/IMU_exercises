@@ -16,3 +16,9 @@
 [submodule "SparkFun_MPU-9250_Breakout_Arduino_Library"]
 	path = SparkFun_MPU-9250_Breakout_Arduino_Library
 	url = https://github.com/sparkfun/SparkFun_MPU-9250_Breakout_Arduino_Library.git
+[submodule "Adafruit-PCD8544-Nokia-5110-LCD-library"]
+	path = Adafruit-PCD8544-Nokia-5110-LCD-library
+	url = https://github.com/bbx10/Adafruit-PCD8544-Nokia-5110-LCD-library.git
+[submodule "Adafruit-GFX-Library"]
+	path = Adafruit-GFX-Library
+	url = https://github.com/adafruit/Adafruit-GFX-Library.git
