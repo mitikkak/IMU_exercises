@@ -22,3 +22,6 @@
 [submodule "Adafruit-GFX-Library"]
 	path = Adafruit-GFX-Library
 	url = https://github.com/adafruit/Adafruit-GFX-Library.git
+[submodule "SparkFun_MPU-9250-DMP_Arduino_Library"]
+	path = SparkFun_MPU-9250-DMP_Arduino_Library
+	url = https://github.com/sparkfun/SparkFun_MPU-9250-DMP_Arduino_Library.git
