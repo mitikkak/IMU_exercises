@@ -26,11 +26,15 @@
 
 #include "quaternionFilters.h"
 #include "MPU9250.h"
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+#include <WebSocketsServer.h>
 
 #define LCD
 #ifdef LCD
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
+
 
 // Using NOKIA 5110 monochrome 84 x 48 pixel display
 // pin 9 - Serial clock out (SCLK)
@@ -55,6 +59,130 @@ int myLed  = 13;  // Set up pin 13 led for toggling
 
 MPU9250 myIMU;
 
+ESP8266WiFiMulti wifiMulti;
+WebSocketsServer webSocket(80);
+
+#ifndef MY_SSID
+#error Missing MY_SSID
+#endif
+#ifndef MY_WIFI_PASSWD
+#error Missing MY_WIFI_PASSWD
+#endif
+
+const char* my_ssid     = MY_SSID;
+const char* my_password = MY_WIFI_PASSWD;
+
+void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
+#ifdef USE_SOFT_AP
+  WiFi.softAP(ssid, password);             // Start the access point
+  Serial.print("Access Point \"");
+  Serial.print(ssid);
+  Serial.println("\" started\r\n");
+#endif
+  wifiMulti.addAP(my_ssid, my_password);   // add Wi-Fi networks you want to connect to
+//  wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
+//  wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
+
+  Serial.println("Connecting");
+  Serial.println(my_ssid);
+  Serial.println(my_password);
+  while (wifiMulti.run() != WL_CONNECTED
+#ifdef USE_SOFT_AP
+          && WiFi.softAPgetStationNum() < 1
+#endif
+   )
+  {  // Wait for the Wi-Fi to connect
+    delay(250);
+    Serial.print('.');
+  }
+  Serial.println("\r\n");
+  if(WiFi.softAPgetStationNum() == 0) {      // If the ESP is connected to an AP
+    Serial.print("Connected to ");
+    Serial.println(WiFi.SSID());             // Tell us what network we're connected to
+    Serial.print("IP address:\t");
+    Serial.print(WiFi.localIP());            // Send the IP address of the ESP8266 to the computer
+  }
+#ifdef USE_SOFT_AP
+  else {                                   // If a station is connected to the ESP SoftAP
+    Serial.print("Station connected to ESP8266 AP");
+  }
+#else
+  else {
+      Serial.print("Station not connected!");
+  }
+#endif
+  Serial.println("\r\n");
+}
+
+float pitch = 0.0;
+float roll = 0.0;
+float yaw = 0.0;
+
+void increment(float& dimension)
+{
+    dimension += 1.0;
+    if (dimension >= 360.0)
+    {
+        dimension = 0.0;
+    }
+}
+
+void sendOrientationMessage(uint8_t const num)
+{
+    String payload2 = "Orientation: ";
+//    payload2 += String(myIMU.pitch);
+    payload2 += String(myIMU.pitch);
+//    payload2 += String(pitch);
+    payload2 += String(" ");
+    payload2 += String(myIMU.roll);
+//    payload2 += String(roll);
+    payload2 += String(" ");
+//    payload2 += String(myIMU.yaw);
+    payload2 += String(yaw);
+    webSocket.sendTXT(num, payload2.c_str());
+}
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
+    // Figure out the type of WebSocket event
+    switch(type) {
+
+      // Client has disconnected
+      case WStype_DISCONNECTED:
+        Serial.printf("[%u] Disconnected!\n", num);
+        break;
+
+      // New client has connected
+      case WStype_CONNECTED:
+        {
+          IPAddress ip = webSocket.remoteIP(num);
+          Serial.printf("[%u] Connection from ", num);
+          Serial.println(ip.toString());
+        }
+        break;
+
+      // Echo text message back to client
+      case WStype_TEXT:
+//        Serial.printf("[%u] Text: %s\n", num, payload);
+        sendOrientationMessage(num);
+        break;
+
+      // For everything else: do nothing
+      case WStype_BIN:
+      case WStype_ERROR:
+      case WStype_FRAGMENT_TEXT_START:
+      case WStype_FRAGMENT_BIN_START:
+      case WStype_FRAGMENT:
+      case WStype_FRAGMENT_FIN:
+      default:
+        break;
+    }
+}
+
+void startWebSocket() { // Start a WebSocket server
+  webSocket.begin();                          // start the websocket server
+  webSocket.onEvent(webSocketEvent);          // if there's an incomming websocket message, go to function 'webSocketEvent'
+  Serial.println("WebSocket server started.");
+}
+
 void setup()
 {
   Wire.begin();
@@ -62,17 +190,20 @@ void setup()
   Serial.begin(115200);
 
   // Set up the interrupt pin, its set as active high, push-pull
-  pinMode(intPin, INPUT);
-  digitalWrite(intPin, LOW);
-  pinMode(myLed, OUTPUT);
-  digitalWrite(myLed, HIGH);
+//  pinMode(intPin, INPUT);
+//  digitalWrite(intPin, LOW);
+//  pinMode(myLed, OUTPUT);
+//  digitalWrite(myLed, HIGH);
 
-#ifdef LCD
   display.begin(); // Ini8ialize the display
   display.setContrast(58); // Set the contrast
 
   // Start device display with ID of sensor
   display.clearDisplay();
+
+  startWiFi();
+  startWebSocket();
+
   display.setTextSize(2);
   display.setCursor(0,0); display.print("MPU9250");
   display.setTextSize(1);
@@ -86,7 +217,6 @@ void setup()
   display.setTextSize(1); // Set text size to normal, 2 is twice normal etc.
   display.setTextColor(BLACK); // Set pixel color; 1 on the monochrome screen
   display.clearDisplay();   // clears the screen and buffer
-#endif // LCD
 
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS_AD0, WHO_AM_I_MPU9250);
@@ -131,10 +261,10 @@ void setup()
     display.setCursor(0, 0); display.print("MPU9250 bias");
     display.setCursor(0, 8); display.print(" x   y   z  ");
 
-//    display.setCursor(0,  16); display.print((int)(1000*accelBias[0]));
-//    display.setCursor(24, 16); display.print((int)(1000*accelBias[1]));
-//    display.setCursor(48, 16); display.print((int)(1000*accelBias[2]));
-//    display.setCursor(72, 16); display.print("mg");
+    display.setCursor(0,  16); display.print((int)(1000*myIMU.accelBias[0]));
+    display.setCursor(24, 16); display.print((int)(1000*myIMU.accelBias[1]));
+    display.setCursor(48, 16); display.print((int)(1000*myIMU.accelBias[2]));
+    display.setCursor(72, 16); display.print("mg");
 
     display.setCursor(0,  24); display.print(myIMU.gyroBias[0], 1);
     display.setCursor(24, 24); display.print(myIMU.gyroBias[1], 1);
@@ -205,6 +335,7 @@ void setup()
 
 void loop()
 {
+    webSocket.loop();
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
   if (myIMU.readByte(MPU9250_ADDRESS_AD0, INT_STATUS) & 0x01)
@@ -214,9 +345,9 @@ void loop()
 
     // Now we'll calculate the accleration value into actual g's
     // This depends on scale being set
-    myIMU.ax = (float)myIMU.accelCount[0]*myIMU.aRes; // - accelBias[0];
-    myIMU.ay = (float)myIMU.accelCount[1]*myIMU.aRes; // - accelBias[1];
-    myIMU.az = (float)myIMU.accelCount[2]*myIMU.aRes; // - accelBias[2];
+    myIMU.ax = (float)myIMU.accelCount[0]*myIMU.aRes;  - myIMU.accelBias[0];
+    myIMU.ay = (float)myIMU.accelCount[1]*myIMU.aRes;  - myIMU.accelBias[1];
+    myIMU.az = (float)myIMU.accelCount[2]*myIMU.aRes;  - myIMU.accelBias[2];
 
     myIMU.readGyroData(myIMU.gyroCount);  // Read the x/y/z adc values
     myIMU.getGres();
@@ -394,7 +525,9 @@ void loop()
       // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
       //    8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
       // - http://www.ngdc.noaa.gov/geomag-web/#declination
-      myIMU.yaw   -= 8.5;
+      //myIMU.yaw   -= 8.5;
+      // at Oulu
+      myIMU.yaw   -= 11.2;
       myIMU.roll  *= RAD_TO_DEG;
 
       if(SerialDebug)

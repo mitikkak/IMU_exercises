@@ -5,6 +5,11 @@ set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(LCD_SRC ${PROJECT_ROOT}/LiquidCrystal_I2C)
 set(ARDUINO_CMAKE_DIR ${PROJECT_ROOT}/arduino_cmake)
 set(TIMERONE_SRC ${PROJECT_ROOT}/TimerOne)
+set(WEB_SOCKETS_DIR ${PROJECT_ROOT}/arduinoWebSockets/src)
+set(web_sockets_sources ${WEB_SOCKETS_DIR}/WebSocketsServer.cpp
+                        ${WEB_SOCKETS_DIR}/WebSocketsClient.cpp
+                        ${WEB_SOCKETS_DIR}/WebSockets.cpp
+)
 
 set(PCD8544_SRC ${PROJECT_ROOT}/Adafruit-PCD8544)
 set(PCD8544_ESP8266_SRC ${PROJECT_ROOT}/Adafruit-PCD8544-Nokia-5110-LCD-library)
