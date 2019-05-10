@@ -25,3 +25,6 @@
 [submodule "arduinoWebSockets"]
 	path = arduinoWebSockets
 	url = https://github.com/Links2004/arduinoWebSockets.git
+[submodule "SparkFun_MPU-9250-DMP_Arduino_Library"]
+	path = SparkFun_MPU-9250-DMP_Arduino_Library
+	url = https://github.com/mitikkak/SparkFun_MPU-9250-DMP_Arduino_Library.git
