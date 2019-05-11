@@ -8,6 +8,9 @@ set(EXT_SRC_DIR
                  ${WIRE_ESP8266_DIR}
                  ${ADAFRUIT_GFX_SRC}
                  ${PCD8544_ESP8266_SRC}
+                 ${WIFI_ESP8266_DIR}
+                 ${WEB_SOCKETS_DIR}
+                 ${HASH_ESP8266_DIR}
 )
 
 set(ext_sources 
@@ -15,6 +18,9 @@ set(ext_sources
     ${wire_sources}
     ${spi_sources}
     ${adafruit_esp8266_sources}
+    ${wifi_sources}
+    ${web_sockets_sources}
+    ${HASH_ESP8266_DIR}/Hash.cpp
 )
 
 set(all_sources ${sources} ${ext_sources})

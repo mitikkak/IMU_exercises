@@ -24,9 +24,86 @@ Supported Platforms:
 #include <SparkFunMPU9250-DMP.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+#include <WebSocketsServer.h>
 
 MPU9250_DMP imu;
 Adafruit_PCD8544 display = Adafruit_PCD8544(D4, 15, 14, 13, 12);
+ESP8266WiFiMulti wifiMulti;
+WebSocketsServer webSocket(80);
+const char* my_ssid     = MY_SSID;
+const char* my_password = MY_WIFI_PASSWD;
+
+void startWiFi()
+{
+    wifiMulti.addAP(my_ssid, my_password);
+    Serial.println("Connecting");
+    Serial.println(my_ssid);
+    Serial.println(my_password);
+    while (wifiMulti.run() != WL_CONNECTED)
+    {  // Wait for the Wi-Fi to connect
+      delay(250);
+      Serial.print('.');
+    }
+    Serial.println("\r\n");
+    Serial.print("Connected to ");
+    Serial.println(WiFi.SSID());
+    Serial.print("IP address:\t");
+    Serial.println(WiFi.localIP());
+}
+void sendOrientationMessage(uint8_t const num)
+{
+    String payload2 = "Orientation: ";
+    payload2 += String(imu.pitch);
+    payload2 += String(" ");
+    payload2 += String(imu.roll);
+    payload2 += String(" ");
+    payload2 += String(imu.yaw);
+//    Serial.println(payload2);
+    webSocket.sendTXT(num, payload2.c_str());
+}
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
+    // Figure out the type of WebSocket event
+    switch(type) {
+
+      // Client has disconnected
+      case WStype_DISCONNECTED:
+        Serial.printf("[%u] Disconnected!\n", num);
+        break;
+
+      // New client has connected
+      case WStype_CONNECTED:
+        {
+          IPAddress ip = webSocket.remoteIP(num);
+          Serial.printf("[%u] Connection from ", num);
+          Serial.println(ip.toString());
+        }
+        break;
+
+      // Echo text message back to client
+      case WStype_TEXT:
+//        Serial.printf("[%u] Text: %s\n", num, payload);
+        sendOrientationMessage(num);
+        break;
+
+      // For everything else: do nothing
+      case WStype_BIN:
+      case WStype_ERROR:
+      case WStype_FRAGMENT_TEXT_START:
+      case WStype_FRAGMENT_BIN_START:
+      case WStype_FRAGMENT:
+      case WStype_FRAGMENT_FIN:
+      default:
+        break;
+    }
+}
+void startWebSocket()
+{
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  Serial.println("WebSocket server started.");
+}
 
 void setup() 
 {
@@ -38,6 +115,10 @@ void setup()
   display.setTextSize(1);
   display.setCursor(0,0); display.print("sparkfun_dmp begins"); display.display();
   delay(1000);
+  display.clearDisplay();
+  display.setCursor(0,0); display.print("connecting to wifi"); display.display();
+  startWiFi();
+  startWebSocket();
 
   // Call imu.begin() to verify communication and initialize
   if (imu.begin() != INV_SUCCESS)
@@ -95,6 +176,7 @@ void printIMUData(void)
 
 void loop() 
 {
+    webSocket.loop();
   // Check for new data in the FIFO
   if ( imu.fifoAvailable() )
   {
