@@ -29,7 +29,14 @@ Supported Platforms:
 #include <WebSocketsServer.h>
 
 MPU9250_DMP imu;
+
+#ifndef ARDUINO_ESP8266_GENERIC
+#define LCD
+#endif
+
+#ifdef LCD
 Adafruit_PCD8544 display = Adafruit_PCD8544(D4, 15, 14, 13, 12);
+#endif
 ESP8266WiFiMulti wifiMulti;
 WebSocketsServer webSocket(80);
 const char* my_ssid     = MY_SSID;
@@ -108,15 +115,19 @@ void startWebSocket()
 void setup() 
 {
   Serial.begin(115200);
+#ifdef LCD
   display.begin();
   display.setContrast(58);
   display.clearDisplay();
 
   display.setTextSize(1);
   display.setCursor(0,0); display.print("sparkfun_dmp begins"); display.display();
+#endif
   delay(1000);
+#ifdef LCD
   display.clearDisplay();
   display.setCursor(0,0); display.print("connecting to wifi"); display.display();
+#endif
   startWiFi();
   startWebSocket();
 
@@ -128,11 +139,15 @@ void setup()
       Serial.println("Unable to communicate with MPU-9250");
       Serial.println("Check connections, and try again.");
       Serial.println();
+#ifdef LCD
       display.setCursor(0,20); display.print("imu failure"); display.display();
+#endif
       delay(5000);
     }
   }
+#ifdef LCD
   display.setCursor(0,20); display.print("imu begin done"); display.display();
+#endif
   Serial.println("imu begin done");
   delay(1000);
   
@@ -143,7 +158,6 @@ void setup()
   // accelerometer in low-power mode to estimate quat's.
   // DMP_FEATURE_LP_QUAT and 6X_LP_QUAT are mutually exclusive
 
-  display.setCursor(0,30); display.print("setup done!");
   Serial.println("setup done!");
   delay(1000);
 }
@@ -166,11 +180,14 @@ void printIMUData(void)
             + String(imu.pitch) + ", " + String(imu.yaw));
   Serial.println("Time: " + String(imu.time) + " ms");
   Serial.println();
+
+#ifdef LCD
   display.clearDisplay();
   display.setCursor(0,0); display.print("P: "); display.print(imu.pitch);
   display.setCursor(0,20); display.print("R: "); display.print(imu.roll);
   display.setCursor(0,40); display.print("Y: "); display.print(imu.yaw);
   display.display();
+#endif
 
 }
 
