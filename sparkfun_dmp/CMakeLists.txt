@@ -13,3 +13,4 @@ set(sparkfun_dmp_lib_sources ${SPARKFUN_DMP_LIB_SRC}/SparkFunMPU9250-DMP.cpp
 
 add_subdirectory(targets/esp8266/generic)
 add_subdirectory(targets/esp8266/12e)
+add_subdirectory(targets/wroom32)

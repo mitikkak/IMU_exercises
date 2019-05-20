@@ -23,6 +23,7 @@ set(adafruit_esp8266_sources ${PCD8544_ESP8266_SRC}/Adafruit_PCD8544.cpp
 
 add_subdirectory(${PROJECT_ROOT}/googletest)
 add_subdirectory(${ARDUINO_CMAKE_DIR}/esp8266/core)
+add_subdirectory(${ARDUINO_CMAKE_DIR}/esp32/core)
 add_subdirectory(${PROJECT_ROOT}/MPU9250_MS5637_t3)
 add_subdirectory(${PROJECT_ROOT}/MPU9250_lulu)
 add_subdirectory(${PROJECT_ROOT}/sparkfun)

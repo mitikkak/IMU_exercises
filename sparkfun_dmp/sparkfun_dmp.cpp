@@ -24,20 +24,28 @@ Supported Platforms:
 #include <SparkFunMPU9250-DMP.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
+#ifdef ESP32
+#include <WiFiMulti.h>
+#else
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+#endif
 #include <WebSocketsServer.h>
 
 MPU9250_DMP imu;
 
-#ifndef ARDUINO_ESP8266_GENERIC
+#if !defined ARDUINO_ESP8266_GENERIC && !defined ESP32
 #define LCD
 #endif
 
 #ifdef LCD
 Adafruit_PCD8544 display = Adafruit_PCD8544(D4, 15, 14, 13, 12);
 #endif
+#ifdef ESP32
+WiFiMulti wifiMulti;
+#else
 ESP8266WiFiMulti wifiMulti;
+#endif
 WebSocketsServer webSocket(80);
 const char* my_ssid     = MY_SSID;
 const char* my_password = MY_WIFI_PASSWD;
