@@ -10,6 +10,7 @@ set(sparkfun_dmp_lib_sources ${SPARKFUN_DMP_LIB_SRC}/SparkFunMPU9250-DMP.cpp
                          ${SPARKFUN_DMP_LIB_SRC}/util/inv_mpu.c
                          ${SPARKFUN_DMP_LIB_SRC}/util/inv_mpu_dmp_motion_driver.c
 )
+set(ESP8266_ASYNC_UDP_DIR ${PROJECT_ROOT}/ESPAsyncUDP/src)
 
 add_subdirectory(targets/esp8266/generic)
 add_subdirectory(targets/esp8266/12e)

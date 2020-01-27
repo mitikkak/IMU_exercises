@@ -1,6 +1,7 @@
 
 import processing.net.*;
-import websockets.*;
+import processing.serial.*;
+//import websockets.*;
 
 class AngularPosition
 {
@@ -19,11 +20,13 @@ class AngularPosition
 AngularPosition inputPos[];
 int positionIndex;
 */
-WebsocketClient c;
+//WebsocketClient c;
 
 float yaw = 0.0;
 float pitch = 0.0;
 float roll = 0.0;
+
+Serial myPort;
 
 void setup()
 {
@@ -49,7 +52,7 @@ void setup()
 
   positionIndex = 0;
   */
-  c = new WebsocketClient(this, "ws://192.168.8.101:80");
+  //c = new WebsocketClient(this, "ws://192.168.8.101:80");
   size(600, 500, P3D);
 
   // if you have only ONE serial port active
@@ -57,23 +60,25 @@ void setup()
 
   // if you know the serial port name
   //myPort = new Serial(this, "COM5:", 9600);                    // Windows
-  //myPort = new Serial(this, "/dev/ttyACM0", 9600);             // Linux
+  myPort = new Serial(this, "/dev/ttyUSB1", 115200);             // Linux
   //myPort = new Serial(this, "/dev/cu.usbmodem1217321", 9600);  // Mac
 
   textSize(16); // set text size
   textMode(SHAPE); // set text mode to shape
 }
 
-String nextPositionMessage = new String("Orientation: 0.0 0.0 0.0");
+///String nextPositionMessage = new String("Orientation: 0.0 0.0 0.0");
+
+/*
 void webSocketEvent(String msg){
  println(msg);
  nextPositionMessage = msg;
-}
+}*/
 
 void draw()
 {
-  c.sendMessage("position?\n");
-  
+  //c.sendMessage("position?\n");
+  String nextPositionMessage = readSerialMessage();
   serialEvent(nextPositionMessage);  // read and parse incoming serial message
   //positionIndex++;
   //if (positionIndex == inputPos.length) { positionIndex = 0; }
@@ -101,12 +106,28 @@ void draw()
 
   // Print values to console
   //print(positionIndex); print(": "); print("\t");
-  print("pitch"); print(pitch); print("\t");
-  print("roll"); print(roll); print("\t");
-  print("yaw"); print(yaw); println();
+  /*
+  print(millis());
+  print(" pitch "); print(pitch);
+  print(" roll "); print(roll);
+  print(" yaw "); print(yaw);
+  println();*/
   //delay(1000);
 }
 
+String readSerialMessage()
+{
+  String msg = "";
+  while (myPort.available() > 0)
+  {
+    msg = myPort.readString();
+  }
+  /*
+  print(millis());
+  print(" ");
+  print(msg);*/
+  return msg;
+}
 void serialEvent(String message)
 {
   

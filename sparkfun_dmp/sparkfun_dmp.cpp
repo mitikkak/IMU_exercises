@@ -25,12 +25,16 @@ Supported Platforms:
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 #ifdef ESP32
-#include <WiFiMulti.h>
+#include "WiFi.h"
+#include "AsyncUDP.h"
 #else
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
+#include "ESP8266WiFi.h"
+#include "ESPAsyncUDP.h"
 #endif
-#include <WebSocketsServer.h>
+
+
+
+AsyncUDP udp;
 
 MPU9250_DMP imu;
 
@@ -41,43 +45,78 @@ MPU9250_DMP imu;
 #ifdef LCD
 Adafruit_PCD8544 display = Adafruit_PCD8544(D4, 15, 14, 13, 12);
 #endif
-#ifdef ESP32
-WiFiMulti wifiMulti;
-#else
-ESP8266WiFiMulti wifiMulti;
-#endif
-WebSocketsServer webSocket(80);
+
+#if 0
 const char* my_ssid     = MY_SSID;
 const char* my_password = MY_WIFI_PASSWD;
+#else
+// async_udp server's
+const char* ssid = "async_udp_ap";
+const char* password = "abba_acdc";
+#endif
 
 void startWiFi()
 {
-    wifiMulti.addAP(my_ssid, my_password);
-    Serial.println("Connecting");
-    Serial.println(my_ssid);
-    Serial.println(my_password);
-    while (wifiMulti.run() != WL_CONNECTED)
-    {  // Wait for the Wi-Fi to connect
-      delay(250);
-      Serial.print('.');
+    Serial.begin(115200);
+    Serial.println("client begins");
+    delay(1000);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+        Serial.println("WiFi Failed");
+        delay(1000);
     }
-    Serial.println("\r\n");
-    Serial.print("Connected to ");
+    Serial.printf("Connected to: ");
     Serial.println(WiFi.SSID());
-    Serial.print("IP address:\t");
+    Serial.printf("IP address: ");
     Serial.println(WiFi.localIP());
 }
+void udpConnect()
+{
+    if(udp.connect(IPAddress(192,168,4,1), 1234)) {
+        Serial.println("UDP connected");
+        udp.onPacket([](AsyncUDPPacket packet) {
+            Serial.println("TODO: server sent something...");
+#if 0
+            Serial.print("UDP Packet Type: ");
+            Serial.print(packet.isBroadcast()?"Broadcast":packet.isMulticast()?"Multicast":"Unicast");
+            Serial.print(", From: ");
+            Serial.print(packet.remoteIP());
+            Serial.print(":");
+            Serial.print(packet.remotePort());
+            Serial.print(", To: ");
+            Serial.print(packet.localIP());
+            Serial.print(":");
+            Serial.print(packet.localPort());
+            Serial.print(", Length: ");
+            Serial.print(packet.length());
+            Serial.print(", Data: ");
+            Serial.write(packet.data(), packet.length());
+            Serial.println();
+#endif
+            //reply to the client
+            //packet.printf("Got %u bytes of data", packet.length());
+        });
+        //Send unicast
+//        udp.print("Hello Server!");
+    }
+}
+unsigned int numOfMessages = 0;
 void sendOrientationMessage(uint8_t const num)
 {
+    (void) num;
     String payload2 = "Orientation: ";
     payload2 += String(imu.pitch);
     payload2 += String(" ");
     payload2 += String(imu.roll);
     payload2 += String(" ");
     payload2 += String(imu.yaw);
-//    Serial.println(payload2);
-    webSocket.sendTXT(num, payload2.c_str());
+
+    udp.print(payload2);
+//    webSocket.broadcastTXT(payload2);
+    numOfMessages++;
 }
+#if 0
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
     // Figure out the type of WebSocket event
     switch(type) {
@@ -99,7 +138,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       // Echo text message back to client
       case WStype_TEXT:
 //        Serial.printf("[%u] Text: %s\n", num, payload);
-        sendOrientationMessage(num);
+        //sendOrientationMessage(num);
         break;
 
       // For everything else: do nothing
@@ -119,6 +158,7 @@ void startWebSocket()
   webSocket.onEvent(webSocketEvent);
   Serial.println("WebSocket server started.");
 }
+#endif
 
 void setup() 
 {
@@ -137,7 +177,8 @@ void setup()
   display.setCursor(0,0); display.print("connecting to wifi"); display.display();
 #endif
   startWiFi();
-  startWebSocket();
+  udpConnect();
+//  startWebSocket();
 
   // Call imu.begin() to verify communication and initialize
   if (imu.begin() != INV_SUCCESS)
@@ -176,14 +217,14 @@ void printIMUData(void)
   // are all updated.
   // Quaternion values are, by default, stored in Q30 long
   // format. calcQuat turns them into a float between -1 and 1
-  float q0 = imu.calcQuat(imu.qw);
-  float q1 = imu.calcQuat(imu.qx);
-  float q2 = imu.calcQuat(imu.qy);
-  float q3 = imu.calcQuat(imu.qz);
-
-  Serial.println("Q: " + String(q0, 4) + ", " +
-                    String(q1, 4) + ", " + String(q2, 4) + 
-                    ", " + String(q3, 4));
+//  float q0 = imu.calcQuat(imu.qw);
+//  float q1 = imu.calcQuat(imu.qx);
+//  float q2 = imu.calcQuat(imu.qy);
+//  float q3 = imu.calcQuat(imu.qz);
+//
+//  Serial.println("Q: " + String(q0, 4) + ", " +
+//                    String(q1, 4) + ", " + String(q2, 4) +
+//                    ", " + String(q3, 4));
   Serial.println("R/P/Y: " + String(imu.roll) + ", "
             + String(imu.pitch) + ", " + String(imu.yaw));
   Serial.println("Time: " + String(imu.time) + " ms");
@@ -199,10 +240,20 @@ void printIMUData(void)
 
 }
 
+unsigned long prevTimeSent = 0;
+bool timeToSend()
+{
+    static const unsigned long interval = 50;
+    return (millis() - prevTimeSent > interval);
+}
+
+unsigned long prevTimeLogged = 0;
+const unsigned long loggingThreshold = 5000;
 void loop() 
 {
-    webSocket.loop();
+//  webSocket.loop();
   // Check for new data in the FIFO
+#if 1
   if ( imu.fifoAvailable() )
   {
     // Use dmpUpdateFifo to update the ax, gx, mx, etc. values
@@ -211,8 +262,21 @@ void loop()
       // computeEulerAngles can be used -- after updating the
       // quaternion values -- to estimate roll, pitch, and yaw
       imu.computeEulerAngles();
-      printIMUData();
+      //printIMUData();
     }
+  }
+#endif
+  if (timeToSend())
+  {
+      sendOrientationMessage(0);
+      prevTimeSent = millis();
+  }
+  unsigned long timeNow = millis();
+  if (timeNow - prevTimeLogged > loggingThreshold)
+  {
+      prevTimeLogged = timeNow;
+      Serial.println(numOfMessages);
+      numOfMessages = 0;
   }
 }
 

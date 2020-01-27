@@ -16,6 +16,7 @@ set(EXT_SRC_DIR
                  ${WIFI_ESP8266_DIR}
                  ${WEB_SOCKETS_DIR}
                  ${HASH_ESP8266_DIR}
+                 ${ESP8266_ASYNC_UDP_DIR}
 )
 
 set(ext_sources 
@@ -26,6 +27,7 @@ set(ext_sources
     ${wifi_sources}
     ${web_sockets_sources}
     ${HASH_ESP8266_DIR}/Hash.cpp
+    ${ESP8266_ASYNC_UDP_DIR}/AsyncUDP.cpp
 )
 
 add_executable(${PROJECT_NAME} ${sources} ${ext_sources})

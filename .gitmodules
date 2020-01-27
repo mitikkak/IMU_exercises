@@ -31,3 +31,6 @@
 [submodule "i2cdevlib"]
 	path = i2cdevlib
 	url = https://github.com/jrowberg/i2cdevlib.git
+[submodule "ESPAsyncUDP"]
+	path = ESPAsyncUDP
+	url = https://github.com/me-no-dev/ESPAsyncUDP.git
