@@ -133,9 +133,9 @@ void serialEvent(String message)
   
   String[] list = split(trim(message), " ");
       if (list.length >= 4 && list[0].equals("Orientation:")) {
-        pitch = float(list[1]); // convert to float pitch
+        pitch = float(list[3]); // convert to float pitch
         roll = float(list[2]); // convert to float roll
-        yaw = float(list[3]); // convert to float yaw
+        yaw = float(list[1]); // convert to float yaw
       }
 }
 

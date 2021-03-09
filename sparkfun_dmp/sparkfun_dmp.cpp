@@ -51,8 +51,8 @@ const char* my_ssid     = MY_SSID;
 const char* my_password = MY_WIFI_PASSWD;
 #else
 // async_udp server's
-const char* ssid = "async_udp_ap";
-const char* password = "abba_acdc";
+const char* const ssid = "kayak_logger_ap";
+const char* const password = "";
 #endif
 
 void startWiFi()
@@ -101,19 +101,28 @@ void udpConnect()
 //        udp.print("Hello Server!");
     }
 }
-unsigned int numOfMessages = 0;
+unsigned int numOfMessages{0};
+unsigned int sn{0};
+int toInteger(const float val)
+{
+    return static_cast<int>(std::ceil(val));
+}
 void sendOrientationMessage(uint8_t const num)
 {
     (void) num;
-    String payload2 = "Orientation: ";
-    payload2 += String(imu.pitch);
-    payload2 += String(" ");
-    payload2 += String(imu.roll);
-    payload2 += String(" ");
-    payload2 += String(imu.yaw);
+    const String separator(";");
+    String payload{millis()};
+    payload += String(separator);
+    payload += String(sn++);
+    payload += String(separator);
+    payload += String(toInteger(imu.pitch));
+    payload += String(separator);
+    payload += String(toInteger(imu.roll));
+    payload += String(separator);
+    payload += String(toInteger(imu.yaw));
+    payload += String(separator);
 
-    udp.print(payload2);
-//    webSocket.broadcastTXT(payload2);
+    udp.print(payload);
     numOfMessages++;
 }
 #if 0
@@ -243,7 +252,7 @@ void printIMUData(void)
 unsigned long prevTimeSent = 0;
 bool timeToSend()
 {
-    static const unsigned long interval = 50;
+    static const unsigned long interval = 200;
     return (millis() - prevTimeSent > interval);
 }
 
