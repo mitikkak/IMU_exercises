@@ -31,7 +31,7 @@ Supported Platforms:
 #include "ESP8266WiFi.h"
 #include "ESPAsyncUDP.h"
 #endif
-
+#include "ArduinoOTA.h"
 
 
 AsyncUDP udp;
@@ -51,6 +51,8 @@ const char* my_ssid     = MY_SSID;
 const char* my_password = MY_WIFI_PASSWD;
 #else
 // async_udp server's
+const char* const ota_ssid = "paddle_imu_ap";
+const char* const ota_password = "";
 const char* const ssid = "kayak_logger_ap";
 const char* const password = "";
 #endif
@@ -70,6 +72,45 @@ void startWiFi()
     Serial.println(WiFi.SSID());
     Serial.printf("IP address: ");
     Serial.println(WiFi.localIP());
+}
+void createWifiAp()
+{
+    WiFi.softAP(ota_ssid, ota_password);
+}
+void destroyWifiAp()
+{
+
+}
+void waitForOtaFlash()
+{
+    bool otaStarted{false};
+    ArduinoOTA.onStart([&otaStarted]() {otaStarted = true;});
+    ArduinoOTA.onEnd([]() {});
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+    {
+        const unsigned int percentage = (progress / (total / 100));
+        Serial.println(percentage);
+    });
+    ArduinoOTA.onError([](ota_error_t error) {});
+    ArduinoOTA.begin();
+    unsigned long const startTime = millis();
+    unsigned long deltaTime{0};
+    do
+    {
+        deltaTime = (millis() - startTime) / 1000;
+        delay(100);
+        ArduinoOTA.handle();
+    }
+    while(deltaTime < 30 and not otaStarted);
+#ifndef ESP8266
+    ArduinoOTA.end();
+#endif
+}
+void serveOtaFlashPeriod()
+{
+    createWifiAp();
+    waitForOtaFlash();
+    destroyWifiAp();
 }
 void udpConnect()
 {
@@ -125,49 +166,6 @@ void sendOrientationMessage(uint8_t const num)
     udp.print(payload);
     numOfMessages++;
 }
-#if 0
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
-    // Figure out the type of WebSocket event
-    switch(type) {
-
-      // Client has disconnected
-      case WStype_DISCONNECTED:
-        Serial.printf("[%u] Disconnected!\n", num);
-        break;
-
-      // New client has connected
-      case WStype_CONNECTED:
-        {
-          IPAddress ip = webSocket.remoteIP(num);
-          Serial.printf("[%u] Connection from ", num);
-          Serial.println(ip.toString());
-        }
-        break;
-
-      // Echo text message back to client
-      case WStype_TEXT:
-//        Serial.printf("[%u] Text: %s\n", num, payload);
-        //sendOrientationMessage(num);
-        break;
-
-      // For everything else: do nothing
-      case WStype_BIN:
-      case WStype_ERROR:
-      case WStype_FRAGMENT_TEXT_START:
-      case WStype_FRAGMENT_BIN_START:
-      case WStype_FRAGMENT:
-      case WStype_FRAGMENT_FIN:
-      default:
-        break;
-    }
-}
-void startWebSocket()
-{
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-  Serial.println("WebSocket server started.");
-}
-#endif
 
 void setup() 
 {
@@ -185,9 +183,9 @@ void setup()
   display.clearDisplay();
   display.setCursor(0,0); display.print("connecting to wifi"); display.display();
 #endif
+  serveOtaFlashPeriod();
   startWiFi();
   udpConnect();
-//  startWebSocket();
 
   // Call imu.begin() to verify communication and initialize
   if (imu.begin() != INV_SUCCESS)
@@ -252,7 +250,8 @@ void printIMUData(void)
 unsigned long prevTimeSent = 0;
 bool timeToSend()
 {
-    static const unsigned long interval = 200;
+    //static const unsigned long interval = 200;
+    static const unsigned long interval = 50;
     return (millis() - prevTimeSent > interval);
 }
 

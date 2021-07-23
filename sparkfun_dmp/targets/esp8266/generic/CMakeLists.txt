@@ -17,6 +17,8 @@ set(EXT_SRC_DIR
                  ${WEB_SOCKETS_DIR}
                  ${HASH_ESP8266_DIR}
                  ${ESP8266_ASYNC_UDP_DIR}
+                 ${OTA_ESP8266_DIR}
+                 ${MDNS_ESP8266_DIR}
 )
 
 set(ext_sources 
@@ -26,6 +28,8 @@ set(ext_sources
     ${adafruit_esp8266_sources}
     ${wifi_sources}
     ${web_sockets_sources}
+    ${esp8266_ota_sources}
+    ${esp8266_mdns_sources}
     ${HASH_ESP8266_DIR}/Hash.cpp
     ${ESP8266_ASYNC_UDP_DIR}/AsyncUDP.cpp
 )
