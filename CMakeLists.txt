@@ -13,6 +13,7 @@ set(web_sockets_sources ${WEB_SOCKETS_DIR}/WebSocketsServer.cpp
 
 set(PCD8544_SRC ${PROJECT_ROOT}/Adafruit-PCD8544)
 set(PCD8544_ESP8266_SRC ${PROJECT_ROOT}/Adafruit-PCD8544-Nokia-5110-LCD-library)
+set(PCD8544_ESP32_SRC ${PROJECT_ROOT}/Adafruit-PCD8544-ShiftOut)
 set(ADAFRUIT_GFX_SRC ${PROJECT_ROOT}/Adafruit-GFX-Library)
 set(adafruit_sources ${PCD8544_SRC}/Adafruit_PCD8544.cpp
                      ${ADAFRUIT_GFX_SRC}/Adafruit_GFX.cpp
@@ -20,6 +21,11 @@ set(adafruit_sources ${PCD8544_SRC}/Adafruit_PCD8544.cpp
 set(adafruit_esp8266_sources ${PCD8544_ESP8266_SRC}/Adafruit_PCD8544.cpp
                      ${ADAFRUIT_GFX_SRC}/Adafruit_GFX.cpp
 )
+set(adafruit_esp32_sources ${PCD8544_ESP32_SRC}/Adafruit_PCD8544.cpp
+                     ${ADAFRUIT_GFX_SRC}/Adafruit_GFX.cpp
+)
+set(ADXL345_SRC ${PROJECT_ROOT}/SparkFun_ADXL345_Arduino_Library/src)
+set(adxl345_sources ${ADXL345_SRC}/SparkFun_ADXL345.cpp)
 
 add_subdirectory(${PROJECT_ROOT}/googletest)
 add_subdirectory(${ARDUINO_CMAKE_DIR}/esp8266/core)
@@ -29,3 +35,4 @@ add_subdirectory(${PROJECT_ROOT}/MPU9250_lulu)
 add_subdirectory(${PROJECT_ROOT}/sparkfun)
 add_subdirectory(${PROJECT_ROOT}/sparkfun_dmp)
 add_subdirectory(${PROJECT_ROOT}/mpu6050_dmp6)
+add_subdirectory(${PROJECT_ROOT}/accelerometer_tilt)
