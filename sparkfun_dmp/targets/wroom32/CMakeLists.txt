@@ -14,12 +14,13 @@ set(ext_sources
     ${esp32_ota_sources}
     ${esp32_update_sources}
     ${esp32_mdns_sources}
+    ${adafruit_esp32_sources}
 )
 set(EXT_SRC_DIR
     ${SPARKFUN_DMP_LIB_SRC}
     ${ESP32_WIRE_SRC_DIR}
     ${ADAFRUIT_GFX_SRC}
-    ${PCD8544_ESP8266_SRC}
+    ${PCD8544_ESP32_SRC}
     ${ESP32_SPI_SRC_DIR}
     ${WEB_SOCKETS_DIR}
     ${ESP32_WIFI_SRC_DIR}
